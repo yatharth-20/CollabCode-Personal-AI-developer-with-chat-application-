@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react'
 import { useNavigate,  useLocation } from 'react-router-dom'
+import axios from '../config/axios'
 
 const Project = () => {
   
@@ -7,26 +8,57 @@ const Project = () => {
 
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState(new Set());
+  const [project, setProject] = useState(location.state?.project || null);
 
-  // use users from location.state if provided, otherwise sample users
-  const sampleUsers = [
-    { id: '1', name: 'Alice Johnson', email: 'alice@example.com' },
-    { id: '2', name: 'Bob Smith', email: 'bob@example.com' },
-    { id: '3', name: 'Carol Lee', email: 'carol@example.com' },
-    { id: '4', name: 'Dave Kim', email: 'dave@example.com' },
-  ]
-  const users = location.state?.users || sampleUsers
+  const [users, setUsers] = useState([]);
+
+  const handleUserClick = (id) => {
+        setSelectedUserId(prevSelectedUserId => {
+            const newSelectedUserId = new Set(prevSelectedUserId);
+            if (newSelectedUserId.has(id)) {
+                newSelectedUserId.delete(id);
+            } else {
+                newSelectedUserId.add(id);
+            }
+
+            return newSelectedUserId;
+        });
+
+
+  }
+
+
+  function addCollaborators() {
+
+    axios.put('/projects/add-user', {
+      projectId : location.state.project._id,
+      users : Array.from(selectedUserId)
+    }).then(res => {
+      console.log(res.data);
+      setIsModalOpen(false); 
+    }).catch(err => {
+      console.log(err);
+    })
+    
+  }
+  
 
   useEffect(() => {
-    function onKey(e) {
-      if (e.key === 'Escape') setIsModalOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
 
-  console.log(location.state);
+    axios.get(`/projects/get-project/${location.state.project._id}`).then(res => {
+      setProject(res.data.project);
+    }).catch(err => {
+      console.log(err);
+    })
+
+    axios.get('/users/all').then(res => {
+      setUsers(res.data.users);
+    }).catch(err => {
+      console.log(err);
+    })
+    
+  }, [])
   
   return (
    <main
@@ -47,11 +79,6 @@ const Project = () => {
               <p className='text-sm'>Add Collaborator</p>
             </button>
 
-            {selectedUserId && (
-              <div className='text-xs text-slate-600'>
-                Selected ID: <span className='font-semibold'>{selectedUserId}</span>
-              </div>
-            )}
           </div>
 
           <button
@@ -95,23 +122,27 @@ const Project = () => {
 
           </div>
 
-            <div className="inputField w-full flex">
+          <div className="inputField w-full flex">
 
-              <input
-              className="p-2 px-20 rounded-md bg-white border-none outline-none grow" 
-              type="text" placeholder='Enter Message' />
+            <input
+            className="p-2 px-20 rounded-md bg-white border-none outline-none grow" 
+            type="text" placeholder='Enter Message' />
 
-              <button
-              className='px-3'
-              ><i className='ri-send-plane-fill p-2 rounded-2xl cursor-pointer bg-green-400'></i></button>
+            <button
+            className='px-3'
+            ><i className='ri-send-plane-fill p-2 rounded-2xl cursor-pointer bg-green-400'></i></button>
 
-            </div>
+          </div>
           
         </div>
 
         <div className={`sidePanel w-full h-full flex flex-col gap-2 absolute transition-all ${isSidePanelOpen ? 'translate-x-0' : '-translate-x-full'} top-0 bg-slate-50`}>
 
-          <header className='flex justify-end p-2 px-4 bg-slate-300'>
+          <header className='flex justify-between items-center p-2 px-4 bg-slate-300'>
+
+            <h1
+              className='font-semibold text-lg'
+            >Collaborators</h1>
 
             <button
               onClick={() => setIsSidePanelOpen(false)}
@@ -124,19 +155,23 @@ const Project = () => {
 
           <div className="users flex flex-col gap-2 p-2">
 
-            <div className="user cursor-pointer hover:bg-slate-200 p-2 flex gap-2 items-center">
+            {project.users &&  project.users.map(user => {
+              return (
+                <div className="user cursor-pointer hover:bg-slate-200 p-2 flex gap-2 items-center">
 
-              <div
-              className='aspect-square rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'
-              >
-                <i className="ri-user-fill absolute"></i>
-              </div>
+                  <div
+                  className='aspect-square rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'
+                  >
+                    <i className="ri-user-fill absolute"></i>
+                  </div>
 
-              <h1 
-              className='font-semibold text-lg'
-              >User</h1>
-              
-            </div>
+                  <h1 
+                  className='font-semibold text-lg'
+                  >{user.email}</h1>
+                  
+                </div>
+              )
+            })}
             
           </div>
           
@@ -152,6 +187,7 @@ const Project = () => {
           role="dialog"
         >
           {/* backdrop */}
+
           <div
             className="absolute inset-0 bg-black bg-opacity-50"
             onClick={() => setIsModalOpen(false)}
@@ -170,43 +206,37 @@ const Project = () => {
               </button>
             </header>
 
+
             {/* content area: give bottom padding so items aren't covered by footer */}
             <div className="p-4 max-h-72 overflow-auto pb-24">
-              <ul className="space-y-3">
                 {users.map(user => (
-                  <li
-                    key={user.id}
-                    onClick={() => {
-                      setSelectedUserId(user.id)
-                      // setIsModalOpen(false)
-                    }}
-                    className={`flex items-center gap-3 p-3 rounded-md cursor-pointer hover:bg-slate-100 ${
-                      selectedUserId === user.id ? 'ring-2 ring-offset-2 ring-indigo-300 bg-indigo-50' : ''
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-slate-600 text-white flex items-center justify-center">
-                      <i className="ri-user-fill"></i>
+
+                  <div key={user._id} className={`user cursor-pointer hover:bg-slate-200 ${selectedUserId.has(user._id) ? 'bg-slate-200' : ""} p-2 flex gap-2 items-center`} onClick={() => handleUserClick(user._id)}>
+                                    
+                    <div className='aspect-square relative rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'>
+                        <i className="ri-user-fill absolute"></i>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{user.name}</p>
-                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
-                    </div>
-                    <div className="text-xs text-slate-400">{user.id}</div>
-                  </li>
+
+                    <h1 className='font-semibold text-lg'>{user.email}</h1>
+
+                  </div>
                 ))}
-              </ul>
+                
             </div>
+
 
             {/* Footer: non-overlapping Add Collaborator button */}
             <div className="border-t p-4 bg-white">
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={addCollaborators}
                 className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md shadow-md"
               >
                 Add Collaborator
               </button>
             </div>
-          </div>
+
+          </div> 
+          
         </div>
       )}
       
