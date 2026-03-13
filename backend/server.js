@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import http from 'http';
 import app from './app.js';
 import { Server } from 'socket.io';
+// @ts-ignore: no declaration file for 'jsonwebtoken' in this project
 import jwt from 'jsonwebtoken';
 
 
@@ -13,7 +14,11 @@ const port = process.env.PORT || 3000;
 
 
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors : {
+        origin : '*',
+    }
+});
 
 
 io.use((socket, next) => {
@@ -43,7 +48,7 @@ io.on('connection', socket => {
 
     console.log('A user connected');
 
-    socket.on('event', data => { /* … */ });
+    socket.on('event', data => { console.log('Socket event data:', data); });
     socket.on('disconnect', () => { /* … */ });
 });
 
