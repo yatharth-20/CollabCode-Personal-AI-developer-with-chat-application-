@@ -13,7 +13,7 @@ const UserAuth = ({ children }) => {
     useEffect(() => {
         
         if(user) {
-            setLoading(false);
+            setLoading(false); 
         }
 
 
