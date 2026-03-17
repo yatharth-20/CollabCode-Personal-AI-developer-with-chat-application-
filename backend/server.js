@@ -4,6 +4,8 @@ import app from './app.js';
 import { Server } from 'socket.io';
 // @ts-ignore: no declaration file for 'jsonwebtoken' in this project
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import projectModel from './models/project.model.js';
 
 
 dotenv.config();    // to use environmental variables
@@ -21,10 +23,20 @@ const io = new Server(server, {
 });
 
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
     try {
 
         const token = socket.handshake.auth?.token || socket.handshake.headers.authorization?.split(' ')[ 1 ];
+
+        const projectId = socket.handshake.query?.projectId;
+
+        if (!mongoose.Types.ObjectId.isValid(projectId)) {
+            return next(new Error('Invalid projectId'));
+        }
+
+
+        socket.project = await projectModel.findById(projectId);
+        
         if (!token) {
             return next(new Error('Authentication error'));
         }
@@ -47,6 +59,13 @@ io.use((socket, next) => {
 io.on('connection', socket => {
 
     console.log('A user connected');
+
+    socket.join(socket.project._id.toString());
+
+    socket.on('project-message', data => {
+        console.log('Received project message:', data);
+        socket.broadcast.to(socket.project._id.toString()).emit('project-message', data);
+    });
 
     socket.on('event', data => { console.log('Socket event data:', data); });
     socket.on('disconnect', () => { /* … */ });

@@ -1,16 +1,19 @@
-import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect, useContext} from 'react'
 import { useNavigate,  useLocation } from 'react-router-dom'
 import axios from '../config/axios'
 import { initializeSocket, recieveMessage, sendMessage } from '../config/socket'
+import {UserContext} from '../context/user.context'
 
 const Project = () => {
   
   const location = useLocation();
-
+  
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(new Set());
   const [project, setProject] = useState(location.state?.project || null);
+  const [message, setMessage] = useState('');
+  const {user} = useContext(UserContext);
 
   const [users, setUsers] = useState([]);
 
@@ -33,7 +36,7 @@ const Project = () => {
   function addCollaborators() {
 
     axios.put('/projects/add-user', {
-      projectId : location.state.project._id,
+      projectId : project?._id || location.state?.project?._id,
       users : Array.from(selectedUserId)
     }).then(res => {
       console.log(res.data);
@@ -43,18 +46,31 @@ const Project = () => {
     })
     
   }
+
+  function send() {
+    sendMessage('project-message', {
+      message,
+      sender : user._id
+    })
+
+    setMessage("");
+    
+  }
   
 
   useEffect(() => {
+    const projectId = location.state?.project?._id || project?._id;
+    if (!projectId) return;
 
-    initializeSocket();
+    initializeSocket(projectId);
 
-    axios.get(`/projects/get-project/${location.state.project._id}`).then(res => {
+    recieveMessage('project-message', data => {
+      console.log('Received project message for socket :', data);
+    });
 
+    axios.get(`/projects/get-project/${projectId}`).then(res => {
       console.log(res.data.project);
-
       setProject(res.data.project);
-
     }).catch(err => {
       console.log(err);
     })
@@ -64,8 +80,8 @@ const Project = () => {
     }).catch(err => {
       console.log(err);
     })
-    
-  }, [])
+
+  }, [location.state?.project?._id, project?._id])
   
   return (
    <main
@@ -132,10 +148,15 @@ const Project = () => {
           <div className="inputField w-full flex">
 
             <input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
             className="p-2 px-20 rounded-md bg-white border-none outline-none grow" 
             type="text" placeholder='Enter Message' />
 
+          {/* SEND BUTTON */}
+          
             <button
+            onClick={send}
             className='px-3'
             ><i className='ri-send-plane-fill p-2 rounded-2xl cursor-pointer bg-green-400'></i></button>
 
