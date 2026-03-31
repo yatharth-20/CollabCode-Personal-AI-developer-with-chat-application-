@@ -65,13 +65,17 @@ io.on('connection', socket => {
     socket.join(socket.roomId);
 
     socket.on('project-message', data => {
-        console.log('Received project message:', data);
+        // console.log('Received project message:', data);
+
         // io.to(socket.roomId).emit('project-message', data);  // message send to all including sender
         socket.broadcast.to(socket.roomId).emit('project-message', data); // message send to all except sender
+
     });
 
-    socket.on('event', data => { console.log('Socket event data:', data); });
-    socket.on('disconnect', () => { /* … */ });
+    socket.on('disconnect', () => { 
+        console.log('User disconnected');
+        socket.leave(socket.roomId);
+     });
 });
 
 
