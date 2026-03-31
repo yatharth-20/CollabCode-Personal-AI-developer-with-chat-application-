@@ -89,7 +89,7 @@ const Project = () => {
 
   }, [location.state?.project?._id, project?._id])
 
-  function appendIncomingMessage(data) {
+  function appendIncomingMessage(messageobject) {
     
     const messageBox = document.querySelector('.message-box');
 
@@ -97,37 +97,42 @@ const Project = () => {
     message.classList.add('message', 'max-w-56', 'flex', 'flex-col', 'gap-1', 'p-2', 'bg-slate-50', 'w-fit', 'rounded-md');
 
     message.innerHTML = `
-      <small>${data.sender.email}</small>
-      <p class='text-sm'>${data.message}</p>
+      <small>${messageobject.sender.email}</small>
+      <p class='text-sm'>${messageobject.message}</p>
     `
 
     messageBox.appendChild(message);
+    ScrollToBottom();
   }
 
-  function appendOutGoingMessage(data) {
+  function appendOutGoingMessage(message) {
     
     const messageBox = document.querySelector('.message-box');
 
-    const message = document.createElement('div');
-    message.classList.add('message', 'max-w-56', 'flex', 'flex-col', 'gap-1', 'p-2', 'bg-slate-50', 'w-fit', 'rounded-md', 'ml-auto');
+    const newMessage = document.createElement('div');
+    newMessage.classList.add('message', 'max-w-56', 'flex', 'flex-col', 'gap-1', 'p-2', 'bg-slate-50', 'w-fit', 'rounded-md', 'ml-auto');
 
-    message.innerHTML = `
-      <small>${data.sender.email}</small>
-      <p class='text-sm'>${data.message}</p>
+    newMessage.innerHTML = `
+      <small>${user.email}</small>
+      <p class='text-sm'>${message}</p>
     `
 
-    messageBox.appendChild(message);
+    messageBox.appendChild(newMessage);
+    ScrollToBottom();
   }
 
-  
+  function ScrollToBottom() {
+    messageBox.current.scrollTop = messageBox.current.scrollHeight;
+  }
+
   return (
    <main
     className='h-screen w-screen flex '
    >
-      <section className="left relative flex flex-col h-full min-w-100 bg-slate-300">
+      <section className="left relative flex flex-col h-screen min-w-100 bg-slate-300">
 
         <header
-          className="flex justify-between items-center p-2 px-4 w-full bg-slate-200"
+          className="flex justify-between items-center p-2 px-4 w-full bg-slate-200 absolute top-0"
         >
 
           <div className='flex items-center gap-4'>
@@ -152,39 +157,15 @@ const Project = () => {
 
         </header>
         
-        <div className="conversation-area grow flex flex-col">
+        <div className="conversation-area flex-grow pt-14 pb-10 flex flex-col h-full relative">
 
           <div
-          ref={messageBox}
-          className="message-box grow flex flex-col p-2 gap-3">
-
-            {/* Incoming Message */}
-
-            <div className="message max-w-56 flex flex-col gap-1 p-2 bg-slate-50 w-fit rounded-md">
-
-              <small
-              className='opacity-60 text-xs'
-              >example@gmail.com</small>
-
-              <p className='text-sm'>Lorem ipsum dolor sit amet.</p>
-
-            </div>
-
-            {/* Your Message */}
-
-            <div className="ml-auto max-w-56 message flex flex-col gap-1 p-2 bg-slate-50 w-fit rounded-md">
-
-              <small
-              className='opacity-60 text-xs'
-              >example@gmail.com</small>
-
-              <p className='text-sm'>Lorem ipsum dolor sit amet.</p>
-
-            </div>
+            ref={messageBox}
+            className="message-box grow flex flex-col p-2 gap-3 overflow-auto max-h-full scrollbat-hide">
 
           </div>
 
-          <div className="inputField w-full flex">
+          <div className="inputField w-full flex absolute bottom-0">
 
             <input
             value={message}
