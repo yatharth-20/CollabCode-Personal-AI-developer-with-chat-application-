@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 import http from 'http';
 import app from './app.js';
 import { Server } from 'socket.io';
@@ -66,7 +66,8 @@ io.on('connection', socket => {
 
     socket.on('project-message', data => {
         console.log('Received project message:', data);
-        io.to(socket.roomId).emit('project-message', data);
+        // io.to(socket.roomId).emit('project-message', data);  // message send to all including sender
+        socket.broadcast.to(socket.roomId).emit('project-message', data); // message send to all except sender
     });
 
     socket.on('event', data => { console.log('Socket event data:', data); });
