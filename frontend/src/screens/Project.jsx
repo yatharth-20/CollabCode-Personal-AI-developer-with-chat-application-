@@ -14,6 +14,7 @@ const Project = () => {
   const [project, setProject] = useState(location.state?.project || null);
   const [message, setMessage] = useState('');
   const {user} = useContext(UserContext);
+  const messageBox = React.createRef();
 
   const [users, setUsers] = useState([]);
 
@@ -47,11 +48,14 @@ const Project = () => {
     
   }
 
-  function send() {
+  const send = () => {
+    
     sendMessage('project-message', {
       message,
-      sender : user._id
+      sender : user
     })
+
+    appendOutGoingMessage(message);
 
     setMessage("");
     
@@ -66,6 +70,8 @@ const Project = () => {
 
     recieveMessage('project-message', data => {
       console.log('Received project message for socket :', data);
+      appendIncomingMessage(data);
+
     });
 
     axios.get(`/projects/get-project/${projectId}`).then(res => {
@@ -82,6 +88,37 @@ const Project = () => {
     })
 
   }, [location.state?.project?._id, project?._id])
+
+  function appendIncomingMessage(data) {
+    
+    const messageBox = document.querySelector('.message-box');
+
+    const message = document.createElement('div');
+    message.classList.add('message', 'max-w-56', 'flex', 'flex-col', 'gap-1', 'p-2', 'bg-slate-50', 'w-fit', 'rounded-md');
+
+    message.innerHTML = `
+      <small>${data.sender.email}</small>
+      <p class='text-sm'>${data.message}</p>
+    `
+
+    messageBox.appendChild(message);
+  }
+
+  function appendOutGoingMessage(data) {
+    
+    const messageBox = document.querySelector('.message-box');
+
+    const message = document.createElement('div');
+    message.classList.add('message', 'max-w-56', 'flex', 'flex-col', 'gap-1', 'p-2', 'bg-slate-50', 'w-fit', 'rounded-md', 'ml-auto');
+
+    message.innerHTML = `
+      <small>${data.sender.email}</small>
+      <p class='text-sm'>${data.message}</p>
+    `
+
+    messageBox.appendChild(message);
+  }
+
   
   return (
    <main
@@ -117,7 +154,9 @@ const Project = () => {
         
         <div className="conversation-area grow flex flex-col">
 
-          <div className="message-box grow flex flex-col p-2 gap-3">
+          <div
+          ref={messageBox}
+          className="message-box grow flex flex-col p-2 gap-3">
 
             {/* Incoming Message */}
 
