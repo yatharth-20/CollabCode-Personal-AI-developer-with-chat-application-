@@ -3,6 +3,7 @@ import { useNavigate,  useLocation } from 'react-router-dom'
 import axios from '../config/axios'
 import { initializeSocket, recieveMessage, sendMessage } from '../config/socket'
 import {UserContext} from '../context/user.context'
+import Markdown from 'markdown-to-jsx';
 
 const Project = () => {
   
@@ -96,10 +97,23 @@ const Project = () => {
     const message = document.createElement('div');
     message.classList.add('message', 'max-w-56', 'flex', 'flex-col', 'gap-1', 'p-2', 'bg-slate-50', 'w-fit', 'rounded-md');
 
-    message.innerHTML = `
+    if(messageobject.sender._id === 'ai') {
+
+      const markDown = ( <Markdown>{messageobject.message}</Markdown> )
+
+      message.innerHTML = `
+      <small class='opacity-65 text-xs'>${messageobject.sender.email}</small>
+      <p class='text-sm'>${markDown.props.children}</p>
+      `
+      
+    }
+    else {
+
+      message.innerHTML = `
       <small>${messageobject.sender.email}</small>
       <p class='text-sm'>${messageobject.message}</p>
-    `
+      `
+    }
 
     messageBox.appendChild(message);
     ScrollToBottom();
