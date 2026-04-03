@@ -66,11 +66,34 @@ io.on('connection', socket => {
 
     socket.join(socket.roomId);
 
-    socket.on('project-message', data => {
+    socket.on('project-message', async data => {
+
+        const message = data.message;
+
+        const aiIsPresentInMessage = message.includes('@ai');
+        socket.broadcast.to(socket.roomId).emit('project-message', data);
+
+        if(aiIsPresentInMessage) {
+
+            const prompt = message.replace('@ai', '').trim();
+
+            const result = await generateResult(prompt);
+
+            io.to(socket.roomId).emit('project-message', {
+                message : result,
+                sender : {
+                    _id : 'ai',
+                    email : 'AI'
+                }
+            })
+
+            return;
+        }
+
         // console.log('Received project message:', data);
 
         // io.to(socket.roomId).emit('project-message', data);  // message send to all including sender
-        socket.broadcast.to(socket.roomId).emit('project-message', data); // message send to all except sender
+        // socket.broadcast.to(socket.roomId).emit('project-message', data); // message send to all except sender
 
     });
 
