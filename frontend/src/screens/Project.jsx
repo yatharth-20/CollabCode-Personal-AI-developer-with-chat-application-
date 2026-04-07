@@ -4,6 +4,7 @@ import axios from '../config/axios'
 import { initializeSocket, recieveMessage, sendMessage } from '../config/socket'
 import { UserContext } from '../context/user.context'
 import Markdown from 'markdown-to-jsx';
+import hljs from 'highlight.js';
 
 function SyntaxHighlightedCode(props) {
   const ref = useRef(null)
@@ -36,16 +37,7 @@ const Project = () => {
 
   // Holding all messages in state is optional since we are directly appending messages to the DOM, but it can be useful for other features like message history, editing, etc.
   const [messages, setMessages] = useState([]) // New state variable for messages
-  const [fileTree, setFileTree] = useState({
-    "app.js": {
-      content: `const express = require('express');`
-    },
-    "package.json": {
-      content: `{
-        "name": "collabcode",
-        }`
-    }
-  })
+  const [fileTree, setFileTree] = useState({  })
   const [currentFile, setCurrentFile] = useState(null)
   const [openFiles, setOpenFiles] = useState([])
 
@@ -120,6 +112,11 @@ const Project = () => {
     initializeSocket(projectId);
 
     recieveMessage('project-message', data => {
+
+      const message = JSON.parse(data.message)
+      if(message.fileTree) {
+        setFileTree(message.fileTree);
+      }
 
       setMessages(prevMessages => [...prevMessages, data]) // Update messages state
 
