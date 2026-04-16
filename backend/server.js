@@ -6,7 +6,6 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import projectModel from './models/project.model.js';
-import { send } from "process";
 import { generateResult } from "./services/ai.service.js";
 
 
@@ -14,14 +13,16 @@ dotenv.config();    // to use environmental variables
 
 console.log("✅ ENV LOADED:", process.env.MONGODB_URI);
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors : {
-        origin : '*',
-    }
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+    credentials: true  // ← match Express setting
+  }
 });
 
 
