@@ -3,7 +3,6 @@ import * as userService from '../services/user.service.js';
 import { validationResult } from 'express-validator';
 import redisClient from '../services/redis.service.js';
 
-// Register Controller
 
 export const createUserController = async (req, res) => {
     
@@ -22,11 +21,14 @@ export const createUserController = async (req, res) => {
         res.status(201).json({user, token});
 
     } catch (error) {
-        res.status(400).send(error.message);
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'Email already exists' });
+        }
+        const msg = error.errors ? Object.values(error.errors)[0].message : error.message;
+        res.status(400).json({ message: msg });
     }
 } 
 
-// Login Controller
 
 export const loginController = async (req, res) => {
 
@@ -36,21 +38,27 @@ export const loginController = async (req, res) => {
         return res.status(400).json({errors : errors.array() });
     
     try {
-        const {email, password} = req.body;
+        const { email, password } = req.body;
+        
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email and password are required" });
+        }
 
-        const user = await userModel.findOne({ email }).select('+password');
+        const normalizedEmail = email.trim().toLowerCase();
 
-        if(!user) {
-            res.status(401).json({
-                errors : "Invalid Credentials"
+        const user = await userModel.findOne({ email: normalizedEmail }).select('+password');
+
+        if (!user) {
+            return res.status(401).json({
+                message: "Invalid credentials. User not found."
             })
         }
 
         const isMatch = await user.isValidPassword(password);
 
-        if(!isMatch) {
+        if (!isMatch) {
             return res.status(401).json({
-                errors : "Invalid Credentials"
+                message: "Invalid credentials. Incorrect password."
             })
         };
 
@@ -61,12 +69,11 @@ export const loginController = async (req, res) => {
         res.status(200).json({ user, token });
         
     } catch (error) {
-        res.status(400).send(error.message);
+        res.status(400).json({ message: error.message });
     }
 
 }
 
-// Profile Controller
 
 export const profileController = async (req, res) => {
     res.status(200).json({
@@ -74,12 +81,17 @@ export const profileController = async (req, res) => {
     });
 }
 
-// Logout Controller
 
 export const logoutController = async (req, res) => {
     try {
-        const token = req.cookies.token || req.headers.authorization.split(' ')[ 1 ];
-        redisClient.set(token, 'logout', 'EX',  60 * 60 * 24); 
+        const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(400).json({ message: "No token provided" });
+        }
+        try {
+            await redisClient.set(token, 'logout', 'EX',  60 * 60 * 24);
+        } catch (_err) {
+        }
 
         res.status(200).json({
             message : 'Logged out successfully'
@@ -87,32 +99,24 @@ export const logoutController = async (req, res) => {
     } 
     catch (err) {
         console.log(err);
-        res.status(400).send(err.message);
+        res.status(400).json({ message: err.message });
     }
 }
 
-// Controller to get all users
 
 export const getAllUsersController = async (req, res) => {
     try {
 
-        const loggedInUser = await userModel.findOne({
-            email : req.user.email
-        });
-
-        // console.log(loggedInUser);
-        // console.log("hello")
+        const loggedInUserId = req.user._id;
         
-        const allUsers = await userService.getAllUsers({userId : loggedInUser._id});
-
-        // console.log(allUsers);
+        const allUsers = await userService.getAllUsers({ userId: loggedInUserId });
 
         return res.status(200).json({
-            users : allUsers
+            users: allUsers
         })
         
     } catch (error) {
         console.log(error)
-        res.status(400).sjon({errors : error.message})
+        res.status(400).json({errors : error.message})
     }
 }

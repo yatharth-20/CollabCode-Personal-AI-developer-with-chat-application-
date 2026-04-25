@@ -123,3 +123,14 @@ export const updateFileTree = async (req, res) => {
         res.status(400).json({error : err.message})
     }
 }
+export const deleteProject = async (req, res) => {
+    const { projectId } = req.params;
+
+    try {
+        await projectService.deleteProject({ projectId });
+        return res.status(200).json({ message: "Project deleted successfully" });
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({ error: err.message });
+    }
+}

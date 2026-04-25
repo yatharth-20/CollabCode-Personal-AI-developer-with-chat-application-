@@ -1,85 +1,65 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_KEY);
-const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    generationConfig: {
-        responseMimeType: "application/json",
+let model;
 
+const SYSTEM_PROMPT = `You are an expert full-stack developer AI.
+Your ONLY job is to generate code and return it in a STRICT JSON format.
+
+## RULES
+1. ALWAYS respond with valid JSON.
+2. Every response MUST have a "text" field.
+3. For code generation, include a WebContainer-compatible "fileTree".
+4. Projects with dependencies MUST have a "package.json" with a "start" script.
+5. Include "buildCommand" and "startCommand" for the runner.
+6. Write complete, production-quality code. No placeholders.
+7. If just chatting, respond with ONLY the "text" field.
+8. For "plagiarism check" or "originality", analyze the code and report in "text" field ONLY.
+
+## RESPONSE SCHEMA
+{
+    "text": "description",
+    "fileTree": {
+        "filename.js": { "file": { "contents": "code" } }
     },
-    systemInstruction: `You are an expert in MERN and Development. You have an experience of 10 years in the development. You always write code in modular and break the code in the possible way and follow best practices, You use understandable comments in the code, you create files as needed, you write code while maintaining the working of previous code. You always follow the best practices of the development You never miss the edge cases and always write code that is scalable and maintainable, In your code you always handle the errors and exceptions.You don't need to explain what you do or what your role is. All you need to do is to write code and nothing else. You always write code in the best possible way.
+    "buildCommand": { "mainItem": "npm", "commands": ["install"] },
+    "startCommand": { "mainItem": "node", "commands": ["app.js"] }
+}
+`;
 
-
-    Examples :
-
-    <example>   
-
-        user : "Create an express application."
-        response: {
-            "text":"This is the code for creating an express application.",
-            "fileTree": {
-                "app.js": {
-                    content: "
-                        const express = require('express');
-                        const app = express();
-
-                        app.get('/', (req, res) => {
-                            res.send('Hello World!');
-                        });
-
-                        app.listen(3000, () => {
-                            console.log('Server is running on port 3000');
-                        });
-                    "
-                },
-
-                "package.json": {
-                    content: "
-                        {
-                            "name": "express-app",
-                            "version": "1.0.0",
-                            "main": "index.js",
-                            "scripts": {
-                                "test": "echo \"Error: no test specified\" && exit 1"
-                            },
-                            "keywords": [],
-                            "author": "",
-                            "license": "ISC",
-                            "description": "",
-                            "dependencies": {
-                                "express": "^4.17.1"
-                            }
-                        }
-                    ",
-                },
-
-                "buildCommand": {
-                    mainItem: "npm",
-                    commands: ]["install"]
-                },
-
-                "startCommand": {
-                    mainItem: "node",
-                    commands: ["app.js"]
-                }
-            }
-        }
-
-    </example>
-
-    <example>
-        user : "Hello",
-        response: {
-            "text": "Hello! How can I assist you today?"
-        }
-    }
-    </example>
+const getModel = () => {
+    if (model) return model;
     
-    `
-});
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_KEY);
+    model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash-lite",
+        generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.1,
+        }
+    });
+    return model;
+}
 
 export const generateResult = async (prompt) => {
+    try {
+        const model = getModel();
+        const result = await model.generateContent(`${SYSTEM_PROMPT}\n\nUser Request: ${prompt}`);
+        return result.response.text();
+    } catch (error) {
+        console.error('AI generation error:', error.message);
+        return JSON.stringify({
+            text: `⚠️ AI Error: ${error.message || 'Something went wrong.'}`
+        });
+    }
+}
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+export const generateResultStream = async (prompt) => {
+    try {
+        const model = getModel();
+        const result = await model.generateContentStream(`${SYSTEM_PROMPT}\n\nUser Request: ${prompt}`);
+        return result.stream;
+    } catch (error) {
+        console.error('AI stream error:', error.message);
+        throw error;
+    }
 }
