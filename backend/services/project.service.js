@@ -14,7 +14,7 @@ export const createProject = async ({
     const defaultFileTree = {
         'index.js': {
             file: {
-                contents: '
+                contents: 'console.log("Hello World");'
             }
         }
     };
