@@ -19,7 +19,21 @@ const projectSchema = new mongoose.Schema({
     fileTree: {
         type: Object,
         default: {}
-    }
+    },
+    messages: [
+        {
+            sender: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+            message: { type: String, required: true },
+            timestamp: { type: Date, default: Date.now }
+        }
+    ],
+    aiMessages: [
+        {
+            role: { type: String, required: true },
+            text: { type: String, required: true },
+            timestamp: { type: Date, default: Date.now }
+        }
+    ]
 })
 
 

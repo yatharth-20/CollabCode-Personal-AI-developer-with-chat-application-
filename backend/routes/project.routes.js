@@ -36,4 +36,9 @@ router.put('/update-file-tree',
     projectController.updateFileTree
 )
 
+router.delete('/delete/:projectId',
+    authMiddleware.authUser,
+    projectController.deleteProject
+)
+
 export default router;

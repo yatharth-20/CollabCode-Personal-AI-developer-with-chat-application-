@@ -10,9 +10,19 @@ export const createProject = async ({
     if(!userId)
         throw new Error("User is required");
 
+    
+    const defaultFileTree = {
+        'index.js': {
+            file: {
+                contents: '
+            }
+        }
+    };
+
     const project = await projectModel.create({
         name,
-        users : [userId]
+        users : [userId],
+        fileTree : defaultFileTree
     })
     
     return project;
@@ -91,7 +101,7 @@ export const getProjectById = async ({projectId}) => {
 
     const project = await projectModel.findOne({
         _id : projectId,
-    }).populate("users")
+    }).populate("users").populate("messages.sender")
 
     return project;
 }
@@ -112,6 +122,21 @@ export const updateFileTree = async ({ projectId, fileTree }) => {
         fileTree
     }, {
         new: true
+    })
+
+    return project;
+}
+export const deleteProject = async ({ projectId }) => {
+    if (!projectId) {
+        throw new Error("projectId is required")
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        throw new Error("Invalid projectId")
+    }
+
+    const project = await projectModel.findOneAndDelete({
+        _id: projectId
     })
 
     return project;

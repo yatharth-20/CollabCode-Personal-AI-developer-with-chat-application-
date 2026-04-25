@@ -13,7 +13,7 @@ connect();
 const app = express();
 
 app.use(cors());
-app.use(morgan('dev'));  // gives us details ki kis route pe request ki gyi thi
+app.use(morgan('dev'));  
 app.use(express.json());
 app.use(express.urlencoded({extended : true}));
 app.use(cookieParser());
